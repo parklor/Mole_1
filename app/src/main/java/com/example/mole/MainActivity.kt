@@ -54,7 +54,7 @@ fun MoleScreen(
     modifier: Modifier = Modifier,
     moleViewModel: MoleViewModel = viewModel()
 ) {
-    // 尺寸計算
+
     val density = LocalDensity.current
     val moleSizeDp = 150.dp
     val moleSizePx = with(density) { moleSizeDp.roundToPx() }
