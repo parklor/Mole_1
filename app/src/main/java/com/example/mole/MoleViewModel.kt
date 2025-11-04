@@ -40,9 +40,6 @@ class MoleViewModel : ViewModel() {
         startCounting()
     }
 
-    /**
-     * 啟動計時和地鼠移動的協程 (圖22)
-     */
     private fun startCounting() {
         viewModelScope.launch {
             while (true) {
@@ -52,17 +49,10 @@ class MoleViewModel : ViewModel() {
             }
         }
     }
-
-    /**
-     * 點擊事件：增加分數並隨機移動地鼠
-     */
     fun incrementCounter() {
         counter++
     }
 
-    /**
-     * 隨機移動地鼠到新位置 (圖21)
-     */
     fun moveMole() {
         if (maxX >= 0 && maxY >= 0) {
             // 使用範圍函式 (0..max).random()
@@ -71,9 +61,6 @@ class MoleViewModel : ViewModel() {
         }
     }
 
-    /**
-     * 根據螢幕寬度、高度及地鼠圖片大小，計算螢幕範圍 (圖20)
-     */
     fun getArea(gameSize: IntSize, moleSize: Int) {
         // 計算地鼠可移動的最大 X 和 Y 座標
         maxX = gameSize.width - moleSize
