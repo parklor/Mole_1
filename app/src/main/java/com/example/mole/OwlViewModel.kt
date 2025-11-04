@@ -13,6 +13,10 @@ class OwlViewModel : ViewModel() {
     var owlOffsetY by mutableStateOf(400)
         private set
 
+    /**
+     * 根據拖曳更新貓頭鷹的位置
+     * 參數直接接受 Int，與 Composable 中 .toInt() 呼叫匹配。
+     */
     fun owlDrag(dragAmountX: Int, dragAmountY: Int) {
         owlOffsetX += dragAmountX
         owlOffsetY += dragAmountY
