@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
@@ -14,24 +15,19 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.core.view.WindowCompat.enableEdgeToEdge
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mole.ui.theme.MoleTheme
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.runtime.setValue
 import kotlin.math.roundToInt
+
 // MainActivity 是應用程式的進入點
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,7 +36,6 @@ class MainActivity : ComponentActivity() {
         setContent {
             MoleTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    // 為了最精確的修正，我們將內邊距應用到 MoleScreen 上
                     MoleScreen(modifier = Modifier.padding(innerPadding))
                 }
             }
@@ -52,55 +47,67 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MoleScreen(
     modifier: Modifier = Modifier,
-    moleViewModel: MoleViewModel = viewModel()
+    // 引入兩個 ViewModel (圖34)
+    moleViewModel: MoleViewModel = viewModel(),
+    owlViewModel: OwlViewModel = viewModel()
 ) {
-
+    // DP-to-pixel 轉換 (圖23)
     val density = LocalDensity.current
     val moleSizeDp = 150.dp
     val moleSizePx = with(density) { moleSizeDp.roundToPx() }
 
-    // 從 ViewModel 讀取響應式狀態
-    val currentCounter = moleViewModel.counter
-    val currentTime = moleViewModel.stay
+    // 從 MoleViewModel 讀取地鼠偏移量
+    val moleOffsetX = moleViewModel.offsetX
+    val moleOffsetY = moleViewModel.offsetY
 
-    var owlOffsetX by remember { mutableStateOf(100) }
-    var owlOffsetY by remember { mutableStateOf(400) }
+    // 從 OwlViewModel 觀察貓頭鷹的位置 (圖34)
+    val owlOffsetX = owlViewModel.owlOffsetX
+    val owlOffsetY = owlViewModel.owlOffsetY
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
-            .onSizeChanged { intSize ->  // 獲取 Box 的尺寸
-                // 傳遞尺寸給 ViewModel，用於計算地鼠移動邊界
+            .onSizeChanged { intSize ->
                 moleViewModel.getArea(intSize, moleSizePx)
             },
-        Alignment.TopCenter // 將內容預設對齊頂部中央
+        contentAlignment = Alignment.Center // 圖24
     ) {
-        // 1. 分數/時間顯示
+        // 1. 分數/時間顯示 (圖24)
         Text(
-            text = "分數: $currentCounter \n時間: ${currentTime}",
-            modifier = Modifier.padding(24.dp)
+            text = "打地鼠遊戲(羅婉薰)\n分數: ${moleViewModel.counter} \n時間: ${moleViewModel.stay}",
         )
 
+        // 2. 貓頭鷹 Image (圖25 & 圖35)
         Image(
             painter = painterResource(id = R.drawable.owl),
             contentDescription = "貓頭鷹",
             modifier = Modifier
-                .offset { IntOffset(owlOffsetX,owlOffsetY) }
-                .size(moleSizeDp/2)
+                .align(Alignment.TopStart)
+                .pointerInput(Unit) {
+                    detectDragGestures { change, dragAmount ->
+                        change.consume()
+                        // 將拖曳更新任務委託給 OwlViewModel (圖35)
+                        owlViewModel.owlDrag(
+                            dragAmountX = dragAmount.x.toInt(),
+                            dragAmountY = dragAmount.y.toInt()
+                        )
+                    }
+                }
+                // 應用 OwlViewModel 的偏移量
+                .offset {
+                    IntOffset(owlOffsetX, owlOffsetY)
+                }
+                .size(moleSizeDp / 2)
         )
 
-
-        // 2. 地鼠 Image
+        // 3. 地鼠 Image (圖24)
         Image(
             painter = painterResource(id = R.drawable.mole),
             contentDescription = "地鼠",
             modifier = Modifier
-                // 將地鼠對齊 Box 的左上角
                 .align(Alignment.TopStart)
-                // 應用 ViewModel 計算出的偏移量
-                .offset { IntOffset(moleViewModel.offsetX, moleViewModel.offsetY) }
+                .offset { IntOffset(moleOffsetX, moleOffsetY) }
                 .size(moleSizeDp)
-                // 點擊時呼叫 ViewModel 邏輯
                 .clickable { moleViewModel.incrementCounter() }
         )
     }
